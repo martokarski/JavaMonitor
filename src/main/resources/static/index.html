@@ -1,0 +1,88 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" href="static/style">
+
+</head>
+<body>
+<div id="gc-info">
+    <button id="invoke-gc">Invoke GC</button>
+    <div>
+        <h3>Eden space</h3>
+        <div style="position: relative; width: auto; height: 200px">
+            <canvas id="eden-space"></canvas>
+        </div>
+    </div>
+    <div>
+        <h3>Survivor space</h3>
+        <div style="position: relative; width: auto; height: 200px">
+            <canvas id="survivor-space"></canvas>
+        </div>
+    </div>
+    <div>
+        <h3>Old space</h3>
+        <div style="position: relative; width: auto; height: 200px">
+            <canvas id="old-space"></canvas>
+        </div>
+    </div>
+</div>
+<div id="class-info">
+    <h1>Class transformation</h1>
+    <div id="transformed-classes-container">
+        <label for="transformed-classes">Transformed classes:</label><textarea id="transformed-classes"></textarea>
+        <input type="checkbox" id="gather-stacktrace"><label for="gather-stacktrace">Gather stacktrace</label>
+    </div>
+    <div id="profiler-container">
+        <button id="toggle-profiler"></button>
+    </div>
+    <div id="class-table" style="display: none;">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Class</th>
+                <th>Number of instances</th>
+                <th>Number of generations</th>
+                <td>Details</td>
+            </tr>
+            </thead>
+            <tbody id="class-table-body">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="age-histogram-container" style="position: relative; width: auto; height: 400px">
+                </div>
+                <div id="all-stacktrace-render">
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+        integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+        crossorigin="anonymous"></script>
+<script src="static/main"></script>
+</body>
+</html>

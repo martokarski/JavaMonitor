@@ -1,0 +1,49 @@
+.stack-container {
+    line-height:  1em;
+    padding:  0;
+    margin: 0;
+}
+
+li.parent-element {
+    display: block;
+}
+
+ul.stack-parents {
+    padding-left: 10px;
+}
+
+p {
+    margin: 5px;
+    display: inline;
+}
+
+.modal-dialog.modal-lg {
+    max-width: 90%;
+}
+
+i.arrow {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+}
+
+.right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+}
+
+.left {
+    transform: rotate(135deg);
+    -webkit-transform: rotate(135deg);
+}
+
+.up {
+    transform: rotate(-135deg);
+    -webkit-transform: rotate(-135deg);
+}
+
+.down {
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+}
