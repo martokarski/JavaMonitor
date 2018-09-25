@@ -1,17 +1,18 @@
-package org.mtokarski.allocation.helper;
+package org.mtokarski.allocation.transformer;
 
 import com.google.monitoring.runtime.instrumentation.AllocationInstrumenter;
 
-import java.lang.instrument.ClassFileTransformer;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.ProtectionDomain;
 import java.util.List;
 
-public class ClassTransformer implements ClassFileTransformer {
-
-    private final List<String> monitoredClasses;
+public class ClassTransformer extends AbstractClassTransformer {
 
     public ClassTransformer(List<String> monitoredClasses) {
-        this.monitoredClasses = monitoredClasses;
+        super(monitoredClasses);
     }
 
     @Override
@@ -31,19 +32,20 @@ public class ClassTransformer implements ClassFileTransformer {
         return null;
     }
 
-    public boolean shouldRetransform(String className) {
-        String properClassName = className.replace('/', '.');
-
-        //ThreadLocal is used internally during allocation tracking process, if it was also instrumented native errors can occur
-        if (properClassName.startsWith("java.lang.ThreadLocal")) {
-            return false;
-        }
-        for (String classPrefix : monitoredClasses) {
-            if (properClassName.startsWith(classPrefix)) {
-                return true;
-            }
+    private void saveClass(byte[] classBuffer, boolean beforeTransformation) throws IOException {
+        File file;
+        if (beforeTransformation) {
+            file = new File("before.class");
+        } else {
+            file = new File("after.class");
         }
 
-        return false;
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+            out.write(classBuffer);
+        }
     }
 }

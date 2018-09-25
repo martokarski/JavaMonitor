@@ -47,3 +47,7 @@ i.arrow {
     transform: rotate(45deg);
     -webkit-transform: rotate(45deg);
 }
+
+.d3-flame-graph-tip {
+    z-index: 10000;
+}

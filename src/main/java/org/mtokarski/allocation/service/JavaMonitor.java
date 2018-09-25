@@ -3,12 +3,13 @@ package org.mtokarski.allocation.service;
 import com.google.monitoring.runtime.instrumentation.AllocationRecorder;
 import org.mtokarski.allocation.SimpleAgent;
 import org.mtokarski.allocation.helper.AllocationAgeCalculator;
-import org.mtokarski.allocation.helper.ClassTransformer;
 import org.mtokarski.allocation.model.ClassInfo;
 import org.mtokarski.allocation.model.GCInfo;
 import org.mtokarski.allocation.model.StacktracePath;
 import org.mtokarski.allocation.tracker.AllocationTracker;
 import org.mtokarski.allocation.tracker.CustomWeakReference;
+import org.mtokarski.allocation.transformer.AbstractClassTransformer;
+import org.mtokarski.allocation.transformer.ClassTransformer;
 import org.mtokarski.allocation.util.ClassNameUtil;
 
 import java.lang.instrument.Instrumentation;
@@ -28,7 +29,7 @@ public class JavaMonitor {
 
     private boolean working;
     private List<String> includedClasses = new ArrayList<>();
-    private ClassTransformer classTransformer;
+    private AbstractClassTransformer classTransformer;
     private AllocationTracker allocationTracker;
     private GCCollector gcCollector;
     private InternalThread internalThread;
@@ -41,6 +42,11 @@ public class JavaMonitor {
         if (mainPackage != null) {
             includedClasses.add(mainPackage);
         }
+    }
+
+    public JavaMonitor(GCCollector gcCollector, Settings settings) {
+        this(gcCollector);
+        start(settings);
     }
 
     public void setGcCollector(GCCollector gcCollector) {
@@ -95,7 +101,9 @@ public class JavaMonitor {
         instrumentation.addTransformer(classTransformer, true);
         try {
             Class[] modifableClasses = getModifiableClasses();
-            instrumentation.retransformClasses(modifableClasses);
+            if (modifableClasses.length > 0) {
+                instrumentation.retransformClasses(modifableClasses);
+            }
             AllocationRecorder.addSampler(allocationTracker);
             internalThread.start();
             working = true;

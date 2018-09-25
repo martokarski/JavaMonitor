@@ -16,6 +16,7 @@ $(document).ready(function () {
             console.log("Profiler already working");
             $toggle.text("Stop");
             $("#class-table").show();
+            updateClasses();
         } else {
             console.log("Profiler not working");
             $toggle.text("Start");
@@ -33,16 +34,16 @@ $(document).ready(function () {
 
     function renderStacktrace(stacktrace, allOcurrences) {
         if (!allOcurrences) {
-            allOcurrences = stacktrace.numberOfInvocations;
+            allOcurrences = stacktrace.value;
         }
         var $container = $("<div class='stack-container'>");
 
-        if (stacktrace.element) {
+        if (stacktrace.name) {
             var $label = $("<div>");
             var $text = $("<p class='stack-element'>");
 
             var $arrow;
-            if (stacktrace.numberOfInvocations * 2 > allOcurrences) {
+            if (stacktrace.value * 2 > allOcurrences) {
                 $arrow = $("<i class='arrow down'>");
             } else {
                 $arrow = $("<i class='arrow right'>");
@@ -60,23 +61,23 @@ $(document).ready(function () {
                     $parents.css("display", "block");
                 }
             });
-            if (stacktrace.parents.length === 0) {
+            if (stacktrace.children.length === 0) {
                 $arrow.css("visibility", "hidden");
             }
             $label.append($arrow);
-            $text.text(stacktrace.element + " " + stacktrace.numberOfInvocations);
+            $text.text(stacktrace.name + " " + stacktrace.value);
             $label.append($text);
             $container.append($label);
         }
 
         var $list = $("<ul class='stack-parents'>");
-        if (stacktrace.numberOfInvocations * 2 > allOcurrences) {
+        if (stacktrace.value * 2 > allOcurrences) {
             $list.css("display", "block");
         } else {
             $list.css("display", "none");
         }
         $container.append($list);
-        stacktrace.parents.forEach(function (stack) {
+        stacktrace.children.forEach(function (stack) {
             var $child = renderStacktrace(stack, allOcurrences);
             var $el = $("<li class='parent-element'>");
             $list.append($el.append($child));
@@ -143,10 +144,20 @@ $(document).ready(function () {
 
         if (!current) {
             usedData.push({x: gc.startTime, y: gc.memoryBefore[spaceType].used, isCurrent: current, name: gc.gcType});
-            committedData.push({x: gc.startTime, y: gc.memoryBefore[spaceType].committed, isCurrent: current, name: gc.gcType});
+            committedData.push({
+                x: gc.startTime,
+                y: gc.memoryBefore[spaceType].committed,
+                isCurrent: current,
+                name: gc.gcType
+            });
         }
         usedData.push({x: gc.endTime, y: gc.memoryAfter[spaceType].used, isCurrent: current, name: gc.gcType});
-        committedData.push({x: gc.endTime, y: gc.memoryAfter[spaceType].committed, isCurrent: current, name: gc.gcType});
+        committedData.push({
+            x: gc.endTime,
+            y: gc.memoryAfter[spaceType].committed,
+            isCurrent: current,
+            name: gc.gcType
+        });
     }
 
     function updateGC() {
@@ -164,72 +175,107 @@ $(document).ready(function () {
                 var gc = resp[resp.length - 2];
                 lastGC = gc.endTime;
             }
+            setTimeout(updateGC, 2 * 1000);
         });
     }
 
     function updateClasses() {
         if (working) {
             $.get("/trackerupdate", function (resp) {
-                var $table = $("#class-table-body");
-                $table.empty();
-                resp.forEach(function (classInfo) {
-                    var classNameColumn = $("<td>");
-                    var instancesNumber = $("<td>");
-                    var generationsNumber = $("<td>");
-                    var details = $("<td>");
+                if (resp) {
+                    var $table = $("#class-table-body");
+                    $table.empty();
+                    resp.forEach(function (classInfo) {
+                        var classNameColumn = $("<td>");
+                        var instancesNumber = $("<td>");
+                        var generationsNumber = $("<td>");
+                        var details = $("<td>");
 
-                    var detailsButton = $("<button>");
-                    detailsButton.text("View details");
-                    detailsButton.click(function () {
-                        var container = $("#age-histogram-container");
-                        container.empty();
-                        var canvas = $("<canvas>");
-                        container.append(canvas);
-                        var tab = removeInitialZeros(classInfo.histogram);
-                        new Chart(canvas, {
-                            type: "bar",
-                            data: {
-                                labels: Array.from({length: tab.length}, function (v, k) {
-                                    return classInfo.histogram.length - k;
-                                }),
-                                datasets: [{
-                                    label: "Age histogram",
-                                    data: tab.reverse()
-                                }]
-                            },
-                            options: {
-                                maintainAspectRatio: false
+                        var detailsButton = $("<button>");
+                        detailsButton.text("View details");
+                        detailsButton.click(function () {
+                            var container = $("#age-histogram-container");
+                            container.empty();
+
+                            var title = $("#modal-title");
+                            title.empty();
+                            title.text(classInfo.className);
+
+                            var flameContainer = $("#flame-chart");
+                            flameContainer.empty();
+                            var flamegraph = d3.flamegraph().width(960);
+                            d3
+                                .select("#flame-chart")
+                                .datum(classInfo.stacktrace)
+                                .call(flamegraph);
+
+                            var canvas = $("<canvas>");
+                            container.append(canvas);
+                            var tab = removeInitialZeros(classInfo.histogram);
+                            new Chart(canvas, {
+                                type: "bar",
+                                data: {
+                                    labels: Array.from({length: tab.length}, function (v, k) {
+                                        return k + 1;
+                                    }),
+                                    datasets: [{
+                                        label: "Age histogram",
+                                        data: tab.reverse()
+                                    }]
+                                },
+                                options: {
+                                    scales: {
+                                        yAxes: [{
+                                            ticks: {
+                                                beginAtZero: true
+                                            },
+                                            scaleLabel: {
+                                                display: true,
+                                                labelString: "Number of objects"
+                                            }
+                                        }],
+                                        xAxes: [{
+                                            scaleLabel: {
+                                                display: true,
+                                                labelString: "Age of objects"
+                                            }
+                                        }]
+                                    },
+                                    maintainAspectRatio: false
+                                }
+                            });
+
+                            var $stacktraceContainer = $("#all-stacktrace-render");
+                            $stacktraceContainer.empty();
+                            if (classInfo.stacktrace.value === 0) {
+                                $("#accordionExample").css("display", "none");
+                            } else {
+                                $("#accordionExample").css("display", "block");
                             }
+                            $stacktraceContainer.append(renderStacktrace(classInfo.stacktrace));
                         });
+                        detailsButton.attr("data-toggle", "modal");
+                        detailsButton.attr("data-target", "#exampleModal");
+                        detailsButton.addClass("btn");
+                        details.append(detailsButton);
 
-                        var $stacktraceContainer = $("#all-stacktrace-render");
-                        $stacktraceContainer.empty();
-                        $stacktraceContainer.append(renderStacktrace(classInfo.stacktrace));
+                        classNameColumn.text(classInfo.className);
+                        instancesNumber.text(classInfo.instancesCount);
+                        generationsNumber.text(classInfo.histogram.reduce(function (previousValue, currentValue, index, array) {
+                            if (currentValue > 0) {
+                                return previousValue + 1;
+                            } else {
+                                return previousValue;
+                            }
+                        }, 0));
+
+                        $table.append($("<tr>").append(classNameColumn).append(instancesNumber).append(generationsNumber).append(details));
                     });
-                    detailsButton.attr("data-toggle", "modal");
-                    detailsButton.attr("data-target", "#exampleModal");
-                    details.append(detailsButton);
+                }
 
-                    classNameColumn.text(classInfo.className);
-                    instancesNumber.text(classInfo.instancesCount);
-                    generationsNumber.text(classInfo.histogram.reduce(function (previousValue, currentValue, index, array) {
-                        if (currentValue > 0) {
-                            return previousValue + 1;
-                        } else {
-                            return previousValue;
-                        }
-                    }, 0));
-
-                    $table.append($("<tr>").append(classNameColumn).append(instancesNumber).append(generationsNumber).append(details));
-                });
+                setTimeout(updateClasses, 2 * 1000);
             });
         }
-    }
-
-    function periodicUpdate() {
-        updateGC();
-        updateClasses();
-        setTimeout(periodicUpdate, 2 * 1000);
     }
 
     function printTime(milis) {
@@ -285,6 +331,7 @@ $(document).ready(function () {
                 scales: {
                     yAxes: [{
                         ticks: {
+                            beginAtZero: true,
                             callback: function (value, index, values) {
                                 return printMemory(value);
                             }
@@ -337,5 +384,6 @@ $(document).ready(function () {
 
     $.get("/monitoredclasses", updateMonitoredClasses);
     $.get("/status", setStatus);
-    periodicUpdate();
+    updateGC();
+    updateClasses();
 });

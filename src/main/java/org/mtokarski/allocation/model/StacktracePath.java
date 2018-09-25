@@ -5,50 +5,50 @@ import java.util.List;
 
 public class StacktracePath {
 
-    private final String element;
-    private final List<StacktracePath> parents;
-    private int numberOfInvocations;
+    private final String name;
+    private final List<StacktracePath> children;
+    private int value;
 
     public static StacktracePath createRoot() {
         return new StacktracePath(null, new ArrayList<>());
     }
 
-    private StacktracePath(String element, List<StacktracePath> parents) {
-        this.element = element;
-        this.parents = parents;
+    private StacktracePath(String name, List<StacktracePath> children) {
+        this.name = name;
+        this.children = children;
     }
 
     private StacktracePath(StackTraceElement[] elements, int firstElement) {
-        numberOfInvocations = 1;
-        element = elements[firstElement].toString();
-        parents = new ArrayList<>();
+        value = 1;
+        name = elements[firstElement].toString();
+        children = new ArrayList<>();
         if (firstElement < elements.length - 1) {
-            parents.add(new StacktracePath(elements, firstElement + 1));
+            children.add(new StacktracePath(elements, firstElement + 1));
         }
     }
 
-    public String getElement() {
-        return element;
+    public String getName() {
+        return name;
     }
 
-    public List<StacktracePath> getParents() {
-        return parents;
+    public List<StacktracePath> getChildren() {
+        return children;
     }
 
-    public int getNumberOfInvocations() {
-        return numberOfInvocations;
+    public int getValue() {
+        return value;
     }
 
     public StacktracePath addStacktrace(StackTraceElement[] stacktace, int firstElement) {
-        this.numberOfInvocations++;
+        this.value++;
         if (firstElement == stacktace.length) {
             return this;
         }
 
         boolean matched = false;
         String top = stacktace[firstElement].toString();
-        for (StacktracePath parent : parents) {
-            if (parent.element.equals(top)) {
+        for (StacktracePath parent : children) {
+            if (parent.name.equals(top)) {
                 parent.addStacktrace(stacktace, firstElement + 1);
                 matched = true;
                 break;
@@ -56,7 +56,7 @@ public class StacktracePath {
         }
 
         if (!matched) {
-            parents.add(new StacktracePath(stacktace, firstElement));
+            children.add(new StacktracePath(stacktace, firstElement));
         }
 
         return this;

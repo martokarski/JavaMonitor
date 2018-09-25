@@ -15,10 +15,21 @@ import java.util.List;
 public class SimpleServer extends NanoHTTPD {
 
     private final GCCollector gcCollector = new GCCollector();
-    private final JavaMonitor monitor = new JavaMonitor(gcCollector);
+    private final JavaMonitor monitor;
 
     public SimpleServer() throws IOException {
+        this(null, false);
+    }
+
+    public SimpleServer(List<String> packages, boolean stacktrace) throws IOException {
         super(8080);
+
+        if (packages == null) {
+            monitor = new JavaMonitor(gcCollector);
+        } else {
+            JavaMonitor.Settings settings = new JavaMonitor.Settings(packages, stacktrace);
+            monitor = new JavaMonitor(gcCollector, settings);
+        }
 
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, true);
         System.out.println("Starting new server on http://localhost:8080");

@@ -10,6 +10,10 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.jar.JarFile;
 
 /**
@@ -30,13 +34,33 @@ public class SimpleAgent {
     private static void start(String agentArgs, Instrumentation inst) {
         try {
             instrumentation = inst;
-            appendJarToBootstrapClassloader(agentArgs);
+            System.out.println(agentArgs);
+            Map<String, String> args = parseInputArgs(agentArgs);
+            appendJarToBootstrapClassloader(args.get("path"));
             injectInstrumentationToRecordingClass();
-            new SimpleServer();
+            startServer(args);
             System.out.println("Started new server!");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Map<String, String> parseInputArgs(String args) {
+        Map<String, String> results = new HashMap<>();
+        if (args != null && !args.isEmpty()) {
+            String[] argLines = args.split(";");
+
+            for (String argLine : argLines) {
+                String[] arg = argLine.split("=");
+                if (arg.length != 2) {
+                    throw new RuntimeException("Invalid argline: '" + argLine + "'");
+                }
+
+                results.put(arg[0], arg[1]);
+            }
+        }
+
+        return results;
     }
 
     private static void appendJarToBootstrapClassloader(String jarPath) throws IOException, URISyntaxException {
@@ -76,6 +100,19 @@ public class SimpleAgent {
         Method setInstrumentation = AllocationRecorder.class.getDeclaredMethod("setInstrumentation", Instrumentation.class);
         setInstrumentation.setAccessible(true);
         setInstrumentation.invoke(null, instrumentation);
+    }
+
+    private static void startServer(Map<String, String> args) throws IOException {
+        String includedClasses = args.get("includedClasses");
+
+        if (includedClasses != null) {
+            List<String> packages = Arrays.asList(includedClasses.split(":"));
+            boolean stacktrace = Boolean.parseBoolean(args.get("useStacktrace"));
+            System.out.println(packages);
+            new SimpleServer(packages, stacktrace);
+        } else {
+            new SimpleServer();
+        }
     }
 
     public static Instrumentation getInstrumentation() {
